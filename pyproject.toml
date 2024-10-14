@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "synstation"
+version = "0.1.0"
+description = "Simulations and analytics for SynStation Tokenomics"
+authors = ["kosunghun317 <kosunghun317@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+ruff = "^0.6.9"
+ipykernel = "^6.29.5"
+numpy = "^2.1.2"
+pandas = "^2.2.3"
+matplotlib = "^3.9.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
