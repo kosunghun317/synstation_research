@@ -13,6 +13,24 @@ def get_y_0_y_1(x_0, p_0):
 
     return (y_0, y_1)
 
+def get_expected_treasury_payment(B, p_array):
+    """
+    Given payment from proposer and probability distribution of outcomes,
+    this function calculates the expectation of leftover fund after settlement,
+    and returns the amount that the treasury should pay.
+    """
+    assert B > 0
+    for p in p_array:
+        assert p > 0 and p < 1
+
+    expected_fund_share = np.sum([get_y_0_y_1(1, p)[1] * p for p in p_array])
+
+    deployer_share = (
+        1 + sum([get_y_0_y_1(1, p)[0] for p in p_array]) - expected_fund_share
+    )
+
+    return B * expected_fund_share / deployer_share
+
 
 def get_guaranteed_treasury_payment(B, p_array):
     """
@@ -34,25 +52,6 @@ def get_guaranteed_treasury_payment(B, p_array):
     return B * guaranteed_fund_share / deployer_share
 
 
-def get_expected_treasury_payment(B, p_array):
-    """
-    Given payment from proposer and probability distribution of outcomes,
-    this function calculates the expectation of leftover fund after settlement,
-    and returns the amount that the treasury should pay.
-    """
-    assert B > 0
-    for p in p_array:
-        assert p > 0 and p < 1
-
-    expected_fund_share = np.mean([get_y_0_y_1(1, p)[1] for p in p_array])
-
-    deployer_share = (
-        1 + sum([get_y_0_y_1(1, p)[0] for p in p_array]) - expected_fund_share
-    )
-
-    return B * expected_fund_share / deployer_share
-
-
 def test_uniform_dist(n=2, B=1_000):
     """
     Test the result of the treasury payment calculation
@@ -62,8 +61,8 @@ def test_uniform_dist(n=2, B=1_000):
     q_array = [1 / n for _ in range(n)]
 
     print(f"n= {n}")
-    print(f"minimum: {get_guaranteed_treasury_payment(B, p_array)}")
-    print(f"expected: {get_expected_treasury_payment(B, q_array)}")
+    print(f"exp: {get_expected_treasury_payment(B, p_array)}")
+    print(f"min: {get_guaranteed_treasury_payment(B, q_array)}")
 
 
 def test_non_uniform_dist(n=2, B=1_000):
@@ -78,8 +77,8 @@ def test_non_uniform_dist(n=2, B=1_000):
     q_array = q_array / np.sum(q_array)
 
     print(f"{n}-outcomes distribution: {p_array}")
-    print(f"minimum: {get_guaranteed_treasury_payment(B, p_array)}")
-    print(f"expected: {get_expected_treasury_payment(B, q_array)}")
+    print(f"exp: {get_expected_treasury_payment(B, p_array)}")
+    print(f"min: {get_guaranteed_treasury_payment(B, q_array)}")
 
 
 if __name__ == "__main__":
