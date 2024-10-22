@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 def get_y_0_y_1(x_0, p_0):
@@ -13,6 +12,7 @@ def get_y_0_y_1(x_0, p_0):
 
     return (y_0, y_1)
 
+
 def get_expected_treasury_payment(B, p_array):
     """
     Given payment from proposer and probability distribution of outcomes,
@@ -23,13 +23,18 @@ def get_expected_treasury_payment(B, p_array):
     for p in p_array:
         assert p > 0 and p < 1
 
+    # caculate the expected leftover fund after settlement,
+    # when the 1 USD is used for minting outcome tokens (i.e, X == 1)
+    # this is the maximum amount that the treasury can pay
     expected_fund_share = np.sum([get_y_0_y_1(1, p)[1] * p for p in p_array])
 
     deployer_share = (
         1 + sum([get_y_0_y_1(1, p)[0] for p in p_array]) - expected_fund_share
     )
 
-    return B * expected_fund_share / deployer_share
+    X = B / deployer_share
+
+    return X * expected_fund_share
 
 
 def get_guaranteed_treasury_payment(B, p_array):
@@ -43,13 +48,18 @@ def get_guaranteed_treasury_payment(B, p_array):
     for p in p_array:
         assert p > 0 and p < 1
 
+    # caculate the guaranteed leftover fund after settlement,
+    # when the 1 USD is used for minting outcome tokens (i.e, X == 1)
+    # this is the maximum amount that the treasury can pay
     guaranteed_fund_share = np.min([get_y_0_y_1(1, p)[1] for p in p_array])
 
     deployer_share = (
         1 + sum([get_y_0_y_1(1, p)[0] for p in p_array]) - guaranteed_fund_share
     )
 
-    return B * guaranteed_fund_share / deployer_share
+    X = B / deployer_share
+
+    return X * guaranteed_fund_share
 
 
 def test_uniform_dist(n=2, B=1_000):
@@ -70,7 +80,7 @@ def test_non_uniform_dist(n=2, B=1_000):
     Test the result of the treasury payment calculation
     under non-uniform distribution of outcomes.
     """
-    np.random.seed(1337)
+    np.random.seed(20180759)
     p_array = np.random.rand(n)
     p_array = p_array / np.sum(p_array)
     q_array = np.random.rand(n)
