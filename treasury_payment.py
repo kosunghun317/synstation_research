@@ -2,10 +2,17 @@ import numpy as np
 
 
 def get_y_0_y_1(x_0, p_0):
+    """
+    computes y_0 and y_1 values for the given x_0 and p_0.
+    p_0: initial probability estimation of the outcome O_i
+    x_0: initial O_i token being depositted to the pool
+    y_0: initial USD token being depositted to the pool
+    y_1: USD token left in the pool after O_i happened
+    """
     assert x_0 > 0
     assert p_0 < 1 and p_0 > 0
 
-    L = x_0 * np.sqrt(p_0)
+    L = x_0 * np.sqrt(p_0) / (1 - np.sqrt(p_0))
 
     y_0 = L * np.sqrt(p_0)
     y_1 = L
@@ -80,7 +87,7 @@ def test_non_uniform_dist(n=2, B=1_000):
     Test the result of the treasury payment calculation
     under non-uniform distribution of outcomes.
     """
-    np.random.seed(20180759)
+    np.random.seed(1337)
     p_array = np.random.rand(n)
     p_array = p_array / np.sum(p_array)
     q_array = np.random.rand(n)
