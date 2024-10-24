@@ -90,12 +90,10 @@ def test_non_uniform_dist(n=2, B=1_000):
     """
     p_array = np.random.rand(n)
     p_array = p_array / np.sum(p_array)
-    q_array = np.random.rand(n)
-    q_array = q_array / np.sum(q_array)
 
     print(f"{n}-outcomes distribution: {p_array}")
     print(f"exp: {get_expected_treasury_payment(B, p_array)}")
-    print(f"min: {get_guaranteed_treasury_payment(B, q_array)}")
+    print(f"min: {get_guaranteed_treasury_payment(B, p_array)}")
 
 
 def plot_treasury_payment(max_N=10, B=1000):
@@ -112,18 +110,15 @@ def plot_treasury_payment(max_N=10, B=1000):
     guaranteed_payment_nonuniform = []
 
     for n in N:
+        # generate uniform probability distribution
         p_array = [1 / n for _ in range(n)]
 
-        expected_payment_uniform.append(get_expected_treasury_payment(B, p_array))
-
-    for n in N:
         # generate random probability distribution
-        p_array = np.random.rand(n)
-        p_array = p_array / np.sum(p_array)
         q_array = np.random.rand(n)
         q_array = q_array / np.sum(q_array)
 
-        expected_payment_nonuniform.append(get_expected_treasury_payment(B, p_array))
+        expected_payment_uniform.append(get_expected_treasury_payment(B, p_array))
+        expected_payment_nonuniform.append(get_expected_treasury_payment(B, q_array))
         guaranteed_payment_nonuniform.append(
             get_guaranteed_treasury_payment(B, q_array)
         )
@@ -145,15 +140,5 @@ def plot_treasury_payment(max_N=10, B=1000):
 if __name__ == "__main__":
     np.random.seed(1337)
     print("seed: 1337")
-
-    print("Test with uniform distribution")
-    for i in range(2, 11):
-        test_uniform_dist(i)
-
-    print("-" * 20)
-
-    print("Test with non-uniform distribution")
-    for i in range(2, 11):
-        test_non_uniform_dist(i)
 
     plot_treasury_payment(10, 1000)
