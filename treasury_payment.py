@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def get_y_0_y_1(x_0, p_0):
@@ -87,7 +88,6 @@ def test_non_uniform_dist(n=2, B=1_000):
     Test the result of the treasury payment calculation
     under non-uniform distribution of outcomes.
     """
-    np.random.seed(1337)
     p_array = np.random.rand(n)
     p_array = p_array / np.sum(p_array)
     q_array = np.random.rand(n)
@@ -98,7 +98,54 @@ def test_non_uniform_dist(n=2, B=1_000):
     print(f"min: {get_guaranteed_treasury_payment(B, q_array)}")
 
 
+def plot_treasury_payment(max_N=10, B=1000):
+    """
+    Plot the treasury payment for different number of outcomes.
+    We assume the probability distribution of outcomes is uniform.
+    """
+    assert max_N > 1
+    assert B > 0
+
+    N = np.arange(2, max_N + 1)
+    expected_payment_uniform = []
+    expected_payment_nonuniform = []
+    guaranteed_payment_nonuniform = []
+
+    for n in N:
+        p_array = [1 / n for _ in range(n)]
+
+        expected_payment_uniform.append(get_expected_treasury_payment(B, p_array))
+
+    for n in N:
+        # generate random probability distribution
+        p_array = np.random.rand(n)
+        p_array = p_array / np.sum(p_array)
+        q_array = np.random.rand(n)
+        q_array = q_array / np.sum(q_array)
+
+        expected_payment_nonuniform.append(get_expected_treasury_payment(B, p_array))
+        guaranteed_payment_nonuniform.append(
+            get_guaranteed_treasury_payment(B, q_array)
+        )
+
+    plt.figure(figsize=(8, 6))
+    plt.plot(N, expected_payment_uniform, label="In Expectation (Uniform)")
+    plt.plot(N, expected_payment_nonuniform, label="In Expectation (Non-uniform)")
+    plt.plot(N, guaranteed_payment_nonuniform, label="Guaranteed (Non-uniform)")
+
+    plt.grid(True)
+    plt.title("Maximum Possible Treasury Payment Under Profitability Constraints")
+    plt.xlabel("Number of Outcomes (N)")
+    plt.ylabel("Treasury Payment")
+    plt.legend()
+    plt.savefig("plots/treasury_payment.png")
+    plt.show()
+
+
 if __name__ == "__main__":
+    np.random.seed(1337)
+    print("seed: 1337")
+
     print("Test with uniform distribution")
     for i in range(2, 11):
         test_uniform_dist(i)
@@ -108,3 +155,5 @@ if __name__ == "__main__":
     print("Test with non-uniform distribution")
     for i in range(2, 11):
         test_non_uniform_dist(i)
+
+    plot_treasury_payment(10, 1000)
