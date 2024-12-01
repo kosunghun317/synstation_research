@@ -114,19 +114,21 @@ def main():
     # parameters
     B = 10000
     delta = 1
-    gamma = 0.01
-    T = 90
+    gamma = 0.005
+    k = 1 # share of proposer among all swap fee earnings
+    T = 30 * 24
     n = 1000
-    sigma = 0.02
+    sigma = 0.02 / np.sqrt(24)
     P_0 = 1000
 
     # generate price paths
     P = generate_price_paths(T, n, sigma, P_0)
+
     # calculate LP losses
     LP_losses = get_LP_losses(P, B, delta)
 
     # calculate swap fee earnings
-    fee_earned = get_swap_fee_earnings(P, B, delta, gamma)
+    fee_earned = k * get_swap_fee_earnings(P, B, delta, gamma)
 
     # calculate total profit
     total_profit = fee_earned - LP_losses
@@ -137,7 +139,6 @@ def main():
     plt.axvline(
         expected_total_profit, color="r", linestyle="dashed", linewidth=2
     )  # add the expected total profit line
-    # legend the expected total profit line
     plt.legend(["Expected Total Profit"])
     plt.xlabel("Total Profit")
     plt.ylabel("Frequency")
