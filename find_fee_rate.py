@@ -115,7 +115,7 @@ def main():
     B = 10000
     delta = 1
     gamma = 0.005
-    k = 1 # share of proposer among all swap fee earnings
+    k = 1  # share of proposer among all swap fee earnings
     T = 30 * 24
     n = 1000
     sigma = 0.02 / np.sqrt(24)
