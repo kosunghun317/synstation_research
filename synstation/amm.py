@@ -11,7 +11,8 @@ class AMM:
         self.X = X
         self.Y = X * p / (1 - np.sqrt(p))
         self.fee_bps = fee_bps
-        self.fee_accumulated = 0
+        self.noise_fee = 0
+        self.arb_fee = 0
 
     def buy(self, dy):
         """
@@ -21,7 +22,7 @@ class AMM:
         new_Y = np.clip(self.Y + dy, 1, self.L)
         new_X = self.L**2 / new_Y - self.L
 
-        self.fee_accumulated += abs(new_Y - self.Y) * self.fee_bps / 10000
+        self.noise_fee += abs(new_Y - self.Y) * self.fee_bps / 10000
         self.X = new_X
         self.Y = new_Y
 
@@ -33,7 +34,7 @@ class AMM:
         new_Y = np.clip(self.Y - dy, 1, self.L)
         new_X = self.L**2 / new_Y - self.L
 
-        self.fee_accumulated += abs(new_Y - self.Y) * self.fee_bps / 10000
+        self.noise_fee += abs(new_Y - self.Y) * self.fee_bps / 10000
         self.X = new_X
         self.Y = new_Y
 
@@ -51,7 +52,7 @@ class AMM:
             new_Y = np.clip(self.L * np.sqrt(new_P), 1, self.L)
             new_X = self.L**2 / new_Y - self.L
 
-            self.fee_accumulated += abs(new_Y - self.Y) * self.fee_bps / 10000
+            self.arb_fee += abs(new_Y - self.Y) * self.fee_bps / 10000
             self.X = new_X
             self.Y = new_Y
         elif P_ext * (1 + self.fee_bps / 10000) < P:
@@ -60,7 +61,7 @@ class AMM:
             new_Y = np.clip(self.L * np.sqrt(new_P), 1, self.L)
             new_X = self.L**2 / new_Y - self.L
 
-            self.fee_accumulated += abs(new_Y - self.Y) * self.fee_bps / 10000
+            self.arb_fee += abs(new_Y - self.Y) * self.fee_bps / 10000
             self.X = new_X
             self.Y = new_Y
         else:
@@ -104,5 +105,8 @@ class BinaryMarket:
         self.YesMarket.arbitrage(P_ext)
         self.NoMarket.arbitrage(1 - P_ext)
 
-    def total_fee(self):
-        return self.YesMarket.fee_accumulated + self.NoMarket.fee_accumulated
+    def total_noise_fee(self):
+        return self.YesMarket.noise_fee + self.NoMarket.noise_fee
+
+    def total_arb_fee(self):
+        return self.YesMarket.arb_fee + self.NoMarket.arb_fee
