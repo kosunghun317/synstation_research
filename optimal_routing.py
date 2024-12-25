@@ -101,9 +101,17 @@ def sell_multiple(amms, i, dx, dx_i):
 
 if __name__ == "__main__":
     n = np.random.randint(3, 10)
-    a = np.random.choice([-1,0,1])
 
-    amms = [AMM(10000 + 1000 * i, 1 / (n + a), 30) for i in range(n)]
+    # # probabilities are all equal over AMMs
+    # a = np.random.choice([-1,0,1])
+    # amms = [AMM(10000 + 1000 * i, 1 / (n + a), 30) for i in range(n)]
+
+    # probabilities are different over AMMs
+    p_array = [np.random.randint(1, 100) for _ in range(n)]
+    p_sum = sum(p_array)
+    for i in range(n):
+        p_array[i] /= p_sum
+    amms = [AMM(10000 + 1000 * i, p_array[i], 30) for i in range(n)]
 
     i = np.random.randint(0, n - 1)
     total_dx = np.random.randint(1, 20000)
