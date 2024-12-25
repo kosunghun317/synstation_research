@@ -97,14 +97,14 @@ def sell_multiple(amms, i, dx, dx_i):
     pass
 
 if __name__ == "__main__":
-    n = np.random.randint(1,10)
+    n = np.random.randint(2,10)
 
-    amms = [AMM(1000 + 0 * i, 1 / n, 30) for i in range(n)]
+    amms = [AMM(10000 + 1000 * i, 1 / n, 30) for i in range(n)]
 
     i = np.random.randint(0, n-1)
-    total_dx = 1000
+    total_dx = np.random.randint(1, 20000)
     left = 0
-    right = total_dx
+    right = amms[i].X * (10**4 - amms[i].fee_bps) / 10**4
     precision = 1e-2
 
     while abs(left - right) > precision:
@@ -123,7 +123,7 @@ if __name__ == "__main__":
     optimal_result = buy_quote(amms, i, total_dx, optimal_dx_i)
 
     # print the optimal dx_i, states before and after the trade
-    print(f"Optimal Split: {optimal_dx_i}, {total_dx - optimal_dx_i}")
+    print(f"Optimal Split: \nPath 1: {optimal_dx_i} \nPath 2: {total_dx - optimal_dx_i}")
     print(f"Before: {sum([amm.get_prob() for amm in amms])}")
     for amm in amms:
         print(f"X: {amm.X}, Y: {amm.Y}, P: {amm.get_prob()}")
