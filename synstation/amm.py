@@ -13,6 +13,8 @@ class AMM:
         self.fee_bps = fee_bps
         self.noise_fee = 0
         self.arb_fee = 0
+        self.fee_X = 0
+        self.fee_Y = 0
 
     def buy(self, dy):
         """
@@ -69,6 +71,31 @@ class AMM:
 
     def get_value(self, P_ext):
         return self.Y + self.X * P_ext
+
+    def sell_X(self, dx):
+        """
+        Arbitrageur sells dx amount of token X
+        and receives token Y
+        """
+        new_X = self.X + dx
+        new_Y = self.L**2 / (new_X + self.L)
+
+        self.fee_X += abs(new_X - self.X) * self.fee_bps / 10000
+        self.X = new_X
+        self.Y = new_Y
+
+    def buy_X(self, dx):
+        """
+        Arbitrageur buys dx amount of token X
+        and pays token Y
+        """
+        assert dx <= self.X
+        new_X = self.X - dx
+        new_Y = self.L**2 / (new_X + self.L)
+
+        self.fee_Y += abs(new_Y - self.Y) * self.fee_bps / 10000
+        self.X = new_X
+        self.Y = new_Y
 
 
 class BinaryMarket:

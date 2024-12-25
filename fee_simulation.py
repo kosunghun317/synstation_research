@@ -33,7 +33,12 @@ def spectral_market_simulation(
 
     # fundamental value of UP token
     P_ext = np.clip(
-        0.5 * (1 + np.log(P / initial_price) / (volatility * np.sqrt(period) * sigma_level)), 0, 1
+        0.5
+        * (
+            1 + np.log(P / initial_price) / (volatility * np.sqrt(period) * sigma_level)
+        ),
+        0,
+        1,
     )
 
     # generate poisson arrival of noise trader
@@ -87,8 +92,12 @@ if __name__ == "__main__":
     _sigma_level = 3
 
     # print
-    max_price = int(_initial_price * np.exp(_volatility * np.sqrt(_period) * _sigma_level))
-    min_price = int(_initial_price / np.exp(_volatility * np.sqrt(_period) * _sigma_level))
+    max_price = int(
+        _initial_price * np.exp(_volatility * np.sqrt(_period) * _sigma_level)
+    )
+    min_price = int(
+        _initial_price / np.exp(_volatility * np.sqrt(_period) * _sigma_level)
+    )
     print(f"Price Range: {min_price} - {max_price}")
 
     # repeat 50 times
