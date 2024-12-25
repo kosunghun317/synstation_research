@@ -33,7 +33,7 @@ class AMM:
         fee_accu = dx * self.fee_bps / 10**4
         new_X = self.X + dx - fee_accu
         new_Y = self.L**2 / (new_X + self.L)
-        dy = new_Y - self.Y
+        dy = self.Y - new_Y
 
         self.fee_X += fee_accu
         self.X = new_X
@@ -58,7 +58,7 @@ class AMM:
             new_Y = self.L**2 / (new_X + self.L)
             dy = self.Y - new_Y
 
-        return dy
+        return dy  # dy should be always positive
 
 
 def buy_quote(amms, i, dx, dx_i):
@@ -92,14 +92,35 @@ def buy_multiple(amms, i, dx, dx_i):
 
 
 def sell_quote(amms, i, dx, dx_i):
-    pass
+    n = len(amms)
 
+    # O_i -> GM
+    quote_i = amms[i].get_quote(dx_i, False)
+
+    # GM -> O_j for j != i
+    # O_j -> GM for j in range(n)
+    quote_j = np.sum([amms[j].get_quote(dx - dx_i, True) for j in range(n) if j != i])
+
+    dy = quote_i + dx - dx_i - quote_j
+
+    return dy
 
 def sell_multiple(amms, i, dx, dx_i):
-    pass
+    n = len(amms)
+
+    # O_i -> GM
+    dy_i = amms[i].sell_X(dx_i)
+
+    # GM -> O_j for j != i
+    # O_j -> GM for j in range(n)
+    dy_j = np.sum([amms[j].buy_X(dx - dx_i) for j in range(n) if j != i])
+
+    dy = dy_i + dx - dx_i - dy_j
+
+    return dy
 
 
-if __name__ == "__main__":
+def test_optimal_buy():
     n = np.random.randint(3, 10)
 
     # # probabilities are all equal over AMMs
@@ -115,11 +136,11 @@ if __name__ == "__main__":
 
     i = np.random.randint(0, n - 1)
     total_dx = np.random.randint(1, 20000)
-    left = 0
-    right = amms[i].X * (10**4 - amms[i].fee_bps) / 10**4
     precision = 1e-2
+    left = min(precision, amms[i].X * precision)
+    right = amms[i].X * (10**4 - amms[i].fee_bps) / 10**4
 
-    while abs(left - right) > precision:
+    while right / left > 1 + precision:
         mid1 = left + (right - left) / 3
         mid2 = right - (right - left) / 3
 
@@ -132,7 +153,6 @@ if __name__ == "__main__":
             right = mid2
 
     optimal_dx_i = (left + right) / 2
-    optimal_result = buy_quote(amms, i, total_dx, optimal_dx_i)
 
     # print the optimal dx_i, states before and after the trade
     print(
@@ -149,3 +169,60 @@ if __name__ == "__main__":
     print(f"After: {sum([amm.get_prob() for amm in amms])}")
     for amm in amms:
         print(f"X: {amm.X}, Y: {amm.Y}, P: {amm.get_prob()}")
+
+def test_optimal_sell():
+    n = np.random.randint(3, 10)
+
+    # # probabilities are all equal over AMMs
+    # a = np.random.choice([-1,0,1])
+    # amms = [AMM(10000 + 1000 * i, 1 / (n + a), 30) for i in range(n)]
+
+    # probabilities are different over AMMs
+    p_array = [np.random.randint(1, 100) for _ in range(n)]
+    p_sum = sum(p_array)
+    for i in range(n):
+        p_array[i] /= p_sum
+    amms = [AMM(10000 + 1000 * i, p_array[i], 30) for i in range(n)]
+
+    i = np.random.randint(0, n - 1)
+    total_dx = np.random.randint(1, 20000)
+    precision = 1e-2
+    left = max(precision, total_dx - min([amms[j].X for j in range(n) if j != i]) * (10**4 - amms[i].fee_bps) / 10**4)
+    right = total_dx
+
+    while right / left > 1 + precision:
+        mid1 = left + (right - left) / 3
+        mid2 = right - (right - left) / 3
+
+        f1 = sell_quote(amms, i, total_dx, mid1)
+        f2 = sell_quote(amms, i, total_dx, mid2)
+
+        if f1 < f2:
+            left = mid1
+        else:
+            right = mid2
+
+    optimal_dx_i = (left + right) / 2
+
+    # print the optimal dx_i, states before and after the trade
+    print(
+        f"Optimal Split: \nPath 1: {optimal_dx_i} \nPath 2: {total_dx - optimal_dx_i}"
+    )
+    print("-" * 50)
+    print(f"Before: {sum([amm.get_prob() for amm in amms])}")
+    for amm in amms:
+        print(f"X: {amm.X}, Y: {amm.Y}, P: {amm.get_prob()}")
+
+    sell_multiple(amms, i, total_dx, optimal_dx_i)
+
+    print("-" * 50)
+    print(f"After: {sum([amm.get_prob() for amm in amms])}")
+    for amm in amms:
+        print(f"X: {amm.X}, Y: {amm.Y}, P: {amm.get_prob()}")
+
+if __name__ == "__main__":
+    print("Test Optimal Buy")
+    test_optimal_buy()
+    print("-" * 50)
+    print("Test Optimal Sell")
+    test_optimal_sell()
