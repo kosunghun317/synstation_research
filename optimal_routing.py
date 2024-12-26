@@ -1,4 +1,5 @@
 import numpy as np
+import tabulate
 
 
 class AMM:
@@ -20,7 +21,7 @@ class AMM:
 
         new_X = self.X - dx
         new_Y = self.L**2 / (new_X + self.L)
-        fee_accu = (new_Y - self.Y) * self.fee_bps / 10**4
+        fee_accu = (new_Y - self.Y) * 10**4 / (10**4 - self.fee_bps)
         dy = new_Y - self.Y + fee_accu
 
         self.fee_Y += fee_accu
@@ -105,6 +106,7 @@ def sell_quote(amms, i, dx, dx_i):
 
     return dy
 
+
 def sell_multiple(amms, i, dx, dx_i):
     n = len(amms)
 
@@ -120,39 +122,79 @@ def sell_multiple(amms, i, dx, dx_i):
     return dy
 
 
-def test_optimal_buy():
-    n = np.random.randint(3, 10)
+def find_optimal_split(amms, i, dx, is_buy):
+    """
+    Find the optimal split of weights for a given trade via ternary search
+    """
+    precision = 1e-6
 
-    # # probabilities are all equal over AMMs
-    # a = np.random.choice([-1,0,1])
-    # amms = [AMM(10000 + 1000 * i, 1 / (n + a), 30) for i in range(n)]
+    if is_buy:
+        left = min(precision, amms[i].X * precision)
+        right = min(dx, amms[i].X * (10**4 - amms[i].fee_bps) / 10**4)
+    else:
+        left = max(
+            precision,
+            dx
+            - min([amms[j].X for j in range(len(amms)) if j != i])
+            * (10**4 - amms[i].fee_bps)
+            / 10**4,
+        )
+        right = dx
 
-    # probabilities are different over AMMs
+    if is_buy:
+        while right / left > 1 + precision:
+            mid1 = left + (right - left) / 3
+            mid2 = right - (right - left) / 3
+
+            f1 = buy_quote(amms, i, dx, mid1)
+            f2 = buy_quote(amms, i, dx, mid2)
+
+            if f1 > f2:
+                left = mid1
+            else:
+                right = mid2
+    else:
+        while right / left > 1 + precision:
+            mid1 = left + (right - left) / 3
+            mid2 = right - (right - left) / 3
+
+            f1 = sell_quote(amms, i, dx, mid1)
+            f2 = sell_quote(amms, i, dx, mid2)
+
+            if f1 < f2:
+                left = mid1
+            else:
+                right = mid2
+
+    return (left + right) / 2
+
+
+def generate_input(n=0, fee_bps=0):
+    """
+    Generate random input for testing: AMMs and trade size
+    """
+    if fee_bps == 0:
+        fee_bps = np.random.choice([1, 5, 10, 30, 100])
+    if n == 0:
+        n = np.random.randint(2, 10)
+    L_array = [10_000 + np.random.randint(0, 100_000) for _ in range(n)]
     p_array = [np.random.randint(1, 100) for _ in range(n)]
     p_sum = sum(p_array)
     for i in range(n):
         p_array[i] /= p_sum
-    amms = [AMM(10000 + 1000 * i, p_array[i], 30) for i in range(n)]
+
+    amms = [AMM(L_array[i], p_array[i], fee_bps) for i in range(n)]
 
     i = np.random.randint(0, n - 1)
-    total_dx = np.random.randint(1, 20000)
-    precision = 1e-2
-    left = min(precision, amms[i].X * precision)
-    right = amms[i].X * (10**4 - amms[i].fee_bps) / 10**4
+    total_dx = np.random.randint(1, 100_000) * n
 
-    while right / left > 1 + precision:
-        mid1 = left + (right - left) / 3
-        mid2 = right - (right - left) / 3
+    return amms, i, total_dx
 
-        f1 = buy_quote(amms, i, total_dx, mid1)
-        f2 = buy_quote(amms, i, total_dx, mid2)
 
-        if f1 > f2:
-            left = mid1
-        else:
-            right = mid2
+def test_buy():
+    amms, i, total_dx = generate_input()
 
-    optimal_dx_i = (left + right) / 2
+    optimal_dx_i = find_optimal_split(amms, i, total_dx, True)
 
     # print the optimal dx_i, states before and after the trade
     print(
@@ -170,39 +212,11 @@ def test_optimal_buy():
     for amm in amms:
         print(f"X: {amm.X}, Y: {amm.Y}, P: {amm.get_prob()}")
 
-def test_optimal_sell():
-    n = np.random.randint(3, 10)
 
-    # # probabilities are all equal over AMMs
-    # a = np.random.choice([-1,0,1])
-    # amms = [AMM(10000 + 1000 * i, 1 / (n + a), 30) for i in range(n)]
+def test_sell():
+    amms, i, total_dx = generate_input()
 
-    # probabilities are different over AMMs
-    p_array = [np.random.randint(1, 100) for _ in range(n)]
-    p_sum = sum(p_array)
-    for i in range(n):
-        p_array[i] /= p_sum
-    amms = [AMM(10000 + 1000 * i, p_array[i], 30) for i in range(n)]
-
-    i = np.random.randint(0, n - 1)
-    total_dx = np.random.randint(1, 20000)
-    precision = 1e-2
-    left = max(precision, total_dx - min([amms[j].X for j in range(n) if j != i]) * (10**4 - amms[i].fee_bps) / 10**4)
-    right = total_dx
-
-    while right / left > 1 + precision:
-        mid1 = left + (right - left) / 3
-        mid2 = right - (right - left) / 3
-
-        f1 = sell_quote(amms, i, total_dx, mid1)
-        f2 = sell_quote(amms, i, total_dx, mid2)
-
-        if f1 < f2:
-            left = mid1
-        else:
-            right = mid2
-
-    optimal_dx_i = (left + right) / 2
+    optimal_dx_i = find_optimal_split(amms, i, total_dx, False)
 
     # print the optimal dx_i, states before and after the trade
     print(
@@ -220,9 +234,10 @@ def test_optimal_sell():
     for amm in amms:
         print(f"X: {amm.X}, Y: {amm.Y}, P: {amm.get_prob()}")
 
+
 if __name__ == "__main__":
     print("Test Optimal Buy")
-    test_optimal_buy()
+    test_buy()
     print("-" * 50)
     print("Test Optimal Sell")
-    test_optimal_sell()
+    test_sell()
