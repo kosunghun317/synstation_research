@@ -13,7 +13,7 @@ class AMM:
         self.fee_bps = fee_bps
         self.fee_X = 0
         self.fee_Y = 0
-        self.precision = 10e-6
+        self.precision = 1e-6
 
     def buy_X(self, dx):
         dx = np.clip(
@@ -232,18 +232,18 @@ def test_buy():
         ["Mint & Sell on O_j <-> GM", (total_dx - optimal_dx_i)],
     ]
     print("Optimal Split:")
-    print(tabulate(data_split, headers=["Path", "Amount"], floatfmt=".2f") + "\n")
+    print(tabulate(data_split, headers=["Path", "Amount"], floatfmt=".0f") + "\n")
 
     # Before the trade
     data_amm = []
     for idx, amm in enumerate(amms):
-        data_amm.append([idx, amm.X, amm.Y, amm.get_prob()])
+        data_amm.append([idx, int(amm.X), int(amm.Y), amm.get_prob()])
     data_amm.append(["Total", "", "", sum([amm.get_prob() for amm in amms])])
 
     # After the trade
     buy_multiple(amms, i, total_dx, optimal_dx_i)
     for idx, amm in enumerate(amms):
-        data_amm[idx].extend([amm.X, amm.Y, amm.get_prob()])
+        data_amm[idx].extend([int(amm.X), int(amm.Y), amm.get_prob()])
     data_amm[-1].extend(["", "", sum([amm.get_prob() for amm in amms])])
 
     # Print the states before and after the trade in one table
@@ -279,18 +279,18 @@ def test_sell():
         ["Burn & Buy on O_j <-> GM", (total_dx - optimal_dx_i)],
     ]
     print("Optimal Split:")
-    print(tabulate(data_split, headers=["Path", "Amount"], floatfmt=".4f") + "\n")
+    print(tabulate(data_split, headers=["Path", "Amount"], floatfmt=".0f") + "\n")
 
     # Before the trade
     data_amm = []
     for idx, amm in enumerate(amms):
-        data_amm.append([idx, amm.X, amm.Y, amm.get_prob()])
+        data_amm.append([idx, int(amm.X), int(amm.Y), amm.get_prob()])
     data_amm.append(["Total", "", "", sum([amm.get_prob() for amm in amms])])
 
     # After the trade
     sell_multiple(amms, i, total_dx, optimal_dx_i)
     for idx, amm in enumerate(amms):
-        data_amm[idx].extend([amm.X, amm.Y, amm.get_prob()])
+        data_amm[idx].extend([int(amm.X), int(amm.Y), amm.get_prob()])
     data_amm[-1].extend(["", "", sum([amm.get_prob() for amm in amms])])
 
     # Print the states before and after the trade in one table
