@@ -17,7 +17,7 @@ class AMM:
 
     def buy_X(self, dx):
         dx = np.clip(
-            dx, 0, self.X * (1 - self.precision)
+            dx, 0, self.X - self.precision
         )  # you cannot buy more than the pool has
 
         new_X = self.X - dx
@@ -48,7 +48,7 @@ class AMM:
 
     def get_quote(self, dx, is_buy):
         if is_buy:
-            dx = np.clip(dx, 0, self.X * (1 - self.precision))
+            dx = np.clip(dx, 0, self.X - self.precision)
 
             new_X = self.X - dx
             new_Y = self.L**2 / (new_X + self.L)
@@ -165,7 +165,7 @@ def find_optimal_split(amms, i, dx, is_buy):
     else:
         left = max(
             precision,
-            dx - min([amms[j].X for j in range(len(amms)) if j != i]) * (1 - precision),
+            dx - min([amms[j].X for j in range(len(amms)) if j != i]) + precision,
         )
         right = dx
 
@@ -202,16 +202,16 @@ def generate_input(n=0, fee_bps=0, total_dx=0):
     Generate random input for testing: AMMs and trade size
     """
     if n == 0:
-        n = np.random.randint(2, 10)
+        n = np.random.randint(2, 25)
     if fee_bps == 0:
         fee_bps = np.random.choice([1, 5, 10, 30, 100])
     if total_dx == 0:
-        total_dx = np.random.randint(1, 100_000) * n
+        total_dx = np.random.randint(1, 100_000) * np.sqrt(n)
 
-    i = np.random.randint(0, n - 1)
+    i = n - 1  # np.random.randint(0, n - 1)
     L_array = [10_000 + np.random.randint(0, 100_000) for _ in range(n)]
     p_array = [np.random.randint(1, 100) for _ in range(n)]
-    p_sum = sum(p_array)
+    p_sum = sum(p_array)  # * np.random.choice([0.8, 0.9, 1.0, 1.1, 1.2])
     for j in range(n):
         p_array[j] /= p_sum
 
@@ -223,7 +223,8 @@ def generate_input(n=0, fee_bps=0, total_dx=0):
 def test_buy():
     print("-" * 100)
     print("Test Optimal Split for Buying\n")
-    amms, i, total_dx = generate_input(0, 10, 0)
+    amms, i, total_dx = generate_input(32, 0, 0)
+    print(f"fee rate: {amms[0].fee_bps} bps\n")
 
     # Optimal Split
     optimal_dx_i = find_optimal_split(amms, i, total_dx, True)
@@ -270,7 +271,8 @@ def test_buy():
 def test_sell():
     print("-" * 100)
     print("Test Optimal Split for Selling\n")
-    amms, i, total_dx = generate_input(0, 10, 0)
+    amms, i, total_dx = generate_input(32, 0, 0)
+    print(f"fee rate: {amms[0].fee_bps} bps\n")
 
     # Optimal Split
     optimal_dx_i = find_optimal_split(amms, i, total_dx, False)
