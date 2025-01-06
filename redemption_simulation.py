@@ -57,14 +57,14 @@ PSM = PegStabilityModule(250_000, 500_000)
 redemption_records = [
     [
         "Iteration",
-        "Depeg",
         "Redeem Amount",
         "Profit",
         "Reserve",
         "Total Supply",
         "Supply Decrease",
+        "Depeg",
     ],
-    [0, "0%", 0, 0, PSM.reserve, PSM.totalSupply, "0%"],
+    [0, 0, 0, PSM.reserve, PSM.totalSupply, "0%", "0%"],
 ]
 
 i = 1
@@ -81,12 +81,12 @@ while PSM.reserve > 0 and i < 100:
     redemption_records.append(
         [
             i,
-            f"{100*(1 - price):.2f}%",
             f"{amount:.0f}",
             f"{profit:.0f}",
             f"{PSM.reserve:.0f}",
             f"{PSM.totalSupply:.0f}",
             f"{100 - PSM.totalSupply / prev_supply * 100:.2f}%",
+            f"{100*(1 - price):.2f}%",
         ]
     )
     i += 1
